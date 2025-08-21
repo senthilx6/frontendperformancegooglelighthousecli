@@ -41,7 +41,7 @@ and url.json
 ```bash
 {
     "urls" : [
-"takeaway/v1/customers/",
+"takeaway/v1/customers",
 "takeaway/v1/settings",
 "takeaway/v1/products",
 ]
@@ -109,3 +109,31 @@ configSettings: {
 node run-lighthouse.js
 
 ### 4. Output
+
+the perforamnce output will be generated as json file collated having all the urls info and inidivual html files inside reports directory , which we can expose it in jenkins using archiveartifacts / publishhtml
+
+```bash
+{
+  "https://dentalhospital9801.myfreshworks.com/takeaway/v1/customers": {
+    "performance": 15,
+    "accessibility": 72,
+    "best-practices": 70,
+    "seo": 75
+  },
+  "https://dentalhospital9801.myfreshworks.com/takeaway/v1/settings": {
+    "performance": 25,
+    "accessibility": 85,
+    "best-practices": 70,
+    "seo": 75
+  },
+  "https://dentalhospital9801.myfreshworks.com/takeaway/v1/products": {
+    "performance": 25,
+    "accessibility": 67,
+    "best-practices": 70,
+    "seo": 75
+  }
+}
+```
+
+### 4. Assertion
+[In progress] you can define the url wise baseline SLA metrics for performance and accessibility and best-practices and compare it with the output json , if any of the page metrics cross the thresold , we can throw an custom expection and make the jenkins job as failed
