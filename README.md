@@ -1,7 +1,7 @@
-# 🚀 Lighthouse Performance Testing for Multi-Tenant SaaS CRM
+# 🚀 Lighthouse Performance Testing
 
 This project automates **frontend performance testing** using [Google Lighthouse](https://developers.google.com/web/tools/lighthouse) via CLI.  
-It is designed for **multi-tenant SaaS CRM applications** where login is required before accessing pages.
+I have taken example of an CRM application to study how Lighthouse Performance Testing works
 
 The script:
 - Logs in to your CRM app (via Puppeteer).
@@ -22,12 +22,29 @@ The script:
 
 ### 1. Clone the Repo
 ```bash
-git clone https://github.com/your-username/lighthouse-multitenant-crm-perf-test.git
-cd lighthouse-multitenant-crm-perf-test
-
-
+git clone https://github.com/your-username/frontendperformancegooglelighthousecli.git
+cd frontendperformancegooglelighthousecli
 npm install
+```
+### 2. Add the login and urls to tested in 
+config.json [not the actual , an example one]
+```bash
 
-
+{
+    "url": "https://dentalhospital9801.myfreshworks.com/",
+    "username": "senthilccp9102@gmail.com",
+    "password": "testautomation19201202"
+}
+```
+url.json [not the actual , an example one]
+```bash
+{
+    "urls" : [
+"takeaway/v1/customers/",
+"takeaway/v1/settings",
+"takeaway/v1/products",
+]
+}
+```
 
 node run-lighthouse.js
