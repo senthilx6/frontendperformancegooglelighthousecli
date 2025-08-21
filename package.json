@@ -1,0 +1,15 @@
+{
+  "name": "frontendperformancegooglelighthousecli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "run-lighthouse.js",
+  "scripts": {
+    "test": "node run-lighthouse.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^23.0.0",
+    "lighthouse": "^12.0.0"
+  }
+}
