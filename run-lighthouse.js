@@ -17,8 +17,8 @@ async function runLighthouse(url, title) {
   disabled: false,
 };
 
-  const options = {logLevel: 'info', output: 'html', port: 9222 , 
-    formFactor: "desktop" , emulatedUserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+  const options = {logLevel: 'info', output: 'html', port: 9220 , 
+    formFactor: "desktop" ,
 screenEmulation : DESKTOP_EMULATION_METRICS};
 
 //   const config = {
@@ -41,7 +41,7 @@ const timestamp = now
 const reportHtml = result.report;
 const filename = `./reports/lighthouse-${title}-${timestamp}.html`;
 
-console.log('Printing the entire result object', result)
+console.log('Printing the entire result object', result.lhr)
 
 console.log('Performance score was', result.lhr.categories.performance.score * 100);
 
@@ -55,8 +55,8 @@ console.log('Performance score was', result.lhr.categories.performance.score * 1
   }
 
   const browser = await puppeteer.launch({   // 4) Launch a headless Chromium via Puppeteer…
-    headless: false,                          // 5) …in headless mode (no visible UI)…
-    args: ["--remote-debugging-port=9222"],  // 6) …expose a DevTools port (so Lighthouse can attach).
+    headless: true,                          // 5) …in headless mode (no visible UI)…
+    args: ["--remote-debugging-port=9220"],  // 6) …expose a DevTools port (so Lighthouse can attach).
   });
 
   const page = await browser.newPage();
@@ -93,6 +93,7 @@ console.log('Performance score was', result.lhr.categories.performance.score * 1
 
     console.log(`⚡ Running Lighthouse for ${url}`);
     var page_title = await page.title()
+    console.log(`⚡ Running Lighthouse for page title ${page_title}`);
     await runLighthouse(final_url,page_title);       // 18) Run Lighthouse against the current page,
   }                                          //     using the existing browser session.
 
