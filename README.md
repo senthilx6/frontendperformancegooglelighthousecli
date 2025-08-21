@@ -27,16 +27,17 @@ cd frontendperformancegooglelighthousecli
 npm install
 ```
 ### 2. Add the login and urls to tested in 
-config.json [not the actual , an example one]
+Under config folder create config.json
 ```bash
 
 {
     "url": "https://dentalhospital9801.myfreshworks.com/",
     "username": "senthilccp9102@gmail.com",
     "password": "testautomation19201202"
+    "title": "dentalCRM"   // used to it to pass to Puppeteer to wait for the title to be displayed after login , to ensure the lighthouse is able to take perforamnce of the below urls
 }
 ```
-url.json [not the actual , an example one]
+and url.json 
 ```bash
 {
     "urls" : [
@@ -47,4 +48,64 @@ url.json [not the actual , an example one]
 }
 ```
 
+### 3 .configs that can be passed to lighthouse
+reference : https://github.com/GoogleChrome/lighthouse/blob/main/docs/readme.md#using-programmatically ,
+https://github.com/GoogleChrome/lighthouse/blob/main/docs/configuration.md
+
+```bash
+configSettings: {
+    output: 'html',
+    maxWaitForFcp: 30000,
+    maxWaitForLoad: 45000,
+    pauseAfterFcpMs: 1000,
+    pauseAfterLoadMs: 1000,
+    networkQuietThresholdMs: 1000,
+    cpuQuietThresholdMs: 1000,
+    formFactor: 'desktop',
+    throttling: {
+      rttMs: 150,
+      throughputKbps: 1638.4,
+      requestLatencyMs: 562.5,
+      downloadThroughputKbps: 1474.5600000000002,
+      uploadThroughputKbps: 675,
+      cpuSlowdownMultiplier: 4
+    },
+    throttlingMethod: 'simulate',
+    screenEmulation: {
+      mobile: false,
+      width: 1550,
+      height: 940,
+      deviceScaleFactor: 1,
+      disabled: false
+    },
+    emulatedUserAgent: 'Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36',
+    auditMode: false,
+    gatherMode: false,
+    clearStorageTypes: [
+      'file_systems',
+      'shader_cache',
+      'service_workers',
+      'cache_storage'
+    ],
+    disableStorageReset: false,
+    debugNavigation: false,
+    channel: 'node',
+    usePassiveGathering: false,
+    disableFullPageScreenshot: false,
+    skipAboutBlank: false,
+    blankPage: 'about:blank',
+    ignoreStatusCode: false,
+    locale: 'en-US',
+    blockedUrlPatterns: null,
+    additionalTraceCategories: null,
+    extraHeaders: null,
+    precomputedLanternData: null,
+    onlyAudits: null,
+    onlyCategories: null,
+    skipAudits: null
+  }
+```
+
 node run-lighthouse.js
+
+### 4. Output
