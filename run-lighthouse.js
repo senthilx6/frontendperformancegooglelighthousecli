@@ -1,101 +1,198 @@
 const fs = require("fs");
 const puppeteer = require("puppeteer");
+const path  = require("path")
 
 
 const url_list = JSON.parse(fs.readFileSync("./config/urls.json", "utf-8"));
 const config = JSON.parse(fs.readFileSync("./config/config.json", "utf-8"));
+const REPORTS_DIR = './reports';
+const INDEX_FILE = path.join(REPORTS_DIR, 'index.html');
 
+
+// Store performance results for all URLs
+const performanceResults = {};
 
 async function runLighthouse(url, title) {
   const { default: lighthouse } = await import("lighthouse");
 
   const DESKTOP_EMULATION_METRICS = {
-  mobile: false,
-  width: 1550,
-  height: 940,
-  deviceScaleFactor: 1,
-  disabled: false,
-};
+    mobile: false,
+    width: 1550,
+    height: 940,
+    deviceScaleFactor: 1,
+    disabled: false
+    // onlyCategories: ["performance", "accessibility", "best-practices"]
+  };
 
-  const options = {logLevel: 'info', output: 'html', port: 9220 , 
-    formFactor: "desktop" ,
-screenEmulation : DESKTOP_EMULATION_METRICS};
-
-//   const config = {
-//   extends: 'lighthouse:default',
-//   settings: {
-//     onlyAudits: [
-//       'first-meaningful-paint',
-//       'speed-index',
-//       'interactive',
-//     ],
-//   },
-// }
+  const options = {
+    logLevel: 'info',
+    output: 'html',
+    port: 9223,
+    formFactor: "desktop",
+    screenEmulation: DESKTOP_EMULATION_METRICS
+  };
 
   const result = await lighthouse(url, options);
 
-const now = new Date();
-const timestamp = now
-  .toISOString()          // "2025-08-21T07:35:20.123Z"
-  .replace(/[:.]/g, "-");
-const reportHtml = result.report;
-const filename = `./reports/lighthouse-${title}-${timestamp}.html`;
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:.]/g, "-");
+  const reportHtml = result.report;
+  const html_reportname = `lighthouse-${title}-${timestamp}.html`;
 
-console.log('Printing the entire result object', result.lhr)
+  const individual_url_performance_html = path.join(REPORTS_DIR, html_reportname);
 
-console.log('Performance score was', result.lhr.categories.performance.score * 100);
+  console.log(`Lighthouse report for ${result.lhr.requestedUrl} is getting generated...`);
 
-  fs.writeFileSync(filename, reportHtml);
-  console.log(`Lighthouse report saved: ${filename}`);
+  // Collect category scores for this URL
+  const categoryScores = {};
+  for (const cathegory in result.lhr.categories) {
+    const score = result.lhr.categories[cathegory].score * 100;
+    categoryScores[cathegory] = score;
+    console.log(`Category: ${cathegory}, Score: ${score}`);
+  }
+  // Store in performanceResults
+  performanceResults[url] = categoryScores;
+
+  console.log(`Lighthouse report for ${result.lhr.finalDisplayedUrl} generated successfully above.`);
+
+  fs.writeFileSync(individual_url_performance_html, reportHtml);
+  console.log(`Lighthouse report saved: ${individual_url_performance_html}`);
+  return {"filepath":html_reportname,"categoryScores": categoryScores};
 }
 
-(async () => {                       // 1) Define an anonymous async function and immediately invoke it.
-  if (!fs.existsSync("./reports")) { // 2) If the 'reports' folder doesn't exist…
-    fs.mkdirSync("./reports");       // 3) …create it. (Where Lighthouse HTML files will be saved.)
+/**
+ * Wait until the page title equals the expected title
+ * @param {object} page - Puppeteer Page object
+ * @param {string} expectedTitle - The exact title to wait for
+ * @param {number} timeout - (optional) Max time in ms to wait (default 30s)
+ */
+async function waitForPageTitle(page, expectedTitle, timeout = 30000) {
+    try {
+  await page.waitForFunction(
+    title => document.title === title,
+    { timeout },
+    expectedTitle
+  );
+} catch (error) {
+  console.error(`Error waiting for page title: ${error.message}`);
+  throw new Error(`Last seen title: "${await page.title()}" with url "${await page.url()}". Expected was: "${expectedTitle}"`);
+}
+  console.log(`✅ Page title matched: "${expectedTitle}"`);
+}
+
+async function getColor(score, category , threshold) {
+  return score[category] >= threshold[category] ? 'green' : 'red';
+}
+
+(async () => {                       
+  if (!fs.existsSync("./reports")) { 
+    fs.mkdirSync("./reports");       
   }
 
-  const browser = await puppeteer.launch({   // 4) Launch a headless Chromium via Puppeteer…
-    headless: true,                          // 5) …in headless mode (no visible UI)…
-    args: ["--remote-debugging-port=9220"],  // 6) …expose a DevTools port (so Lighthouse can attach).
+  const browser = await puppeteer.launch({  
+    headless: true,                          
+    args: ["--remote-debugging-port=9223"],  
   });
 
   const page = await browser.newPage();
   
   await page.setViewport({
-  width: 1550,   // Full HD width
-  height: 940,  // Full HD height
-});// 7) Open a new tab.
+  width: 1550,
+  height: 940,
+});
 
   // Login
-  await page.goto(config.url, {               // 8) Go to the login page…
-    waitUntil: "networkidle2",               // 9) …wait until the network is "quiet":
-  });                                        //    ≤2 network connections for ~500ms.
+  await page.goto(config.url, {              
+    waitUntil: "networkidle2",              
+  });                                       
 
   await page.locator("#username").fill(config.username)
   await page.locator("#password").fill(config.password)
   const element = await page.waitForSelector('::-p-xpath(//button[@data-testid="login-button"])');
   await element.click()
-  await page.waitForNavigation({             // 13) Wait for the post-login navigation to complete
-    waitUntil: "networkidle2",               //     (again using "networkidle2").
+  await page.waitForNavigation({           
+    waitUntil: "networkidle2",              
   });
 
   console.log("Logged in successfully");
+  await waitForPageTitle(page, config.title, 30000);
   let base_url = await page.url()
-  // 14) Log a friendly message.
-
+  let rows = '';
   // Run Lighthouse on each URL
-  for (const url of url_list.urls) {
-    var final_url = base_url +  url               // 15) Loop through each authenticated page URL…
-    await page.goto(final_url, {                   // 16) Navigate to that page…
+  for (const data of url_list.urls) {
+    let threshold = data["thresholds"];
+    let url = data["url"];
+    var final_url = base_url + url;
+    await page.goto(final_url, {
       waitUntil: "domcontentloaded",
-      timeout: 60000            //     …wait for the page to settle.
+      timeout: 60000
     });
 
-    console.log(`⚡ Running Lighthouse for ${url}`);
-    var page_title = await page.title()
-    console.log(`⚡ Running Lighthouse for page title ${page_title}`);
-    await runLighthouse(final_url,page_title);       // 18) Run Lighthouse against the current page,
-  }                                          //     using the existing browser session.
+    var page_title = await page.title();
+    console.log(`Running Lighthouse for ${url}`);
+    console.log(`Running Lighthouse for page title ${page_title}`);
+    var result = await runLighthouse(final_url, page_title);
+    
+    rows += `
+    <tr>
+      <td><a href="${result["filepath"]}" target="_blank">${final_url}</a></td>
+      <td><div class="circle ${await getColor(result["categoryScores"],'performance', threshold)}">${result["categoryScores"]["performance"]}</div></td>
+      <td><div class="circle ${await getColor(result["categoryScores"],'accessibility',threshold)}">${result["categoryScores"]["accessibility"]}</div></td>
+      <td><div class="circle ${await getColor(result["categoryScores"],'best-practices',threshold)}">${result["categoryScores"]["best-practices"]}</div></td>
+    </tr>
+  `;
 
-  await browser.close();                     // 19) Close the browser when done.
-})();                                        // 20) ← The trailing () calls the function immediately.
+
+  }
+
+  // Write performance results to JSON file
+  const perfOutputFile = './reports/performance-results.json';
+  fs.writeFileSync(perfOutputFile, JSON.stringify(performanceResults, null, 2));
+  console.log(`Performance results saved: ${perfOutputFile}`);
+  const resultant_html =  await html_skeleton(rows)
+  fs.writeFileSync(INDEX_FILE, resultant_html, 'utf-8');
+
+
+  await browser.close();
+})();
+
+async function html_skeleton(rows) {
+// build HTML index
+const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lighthouse Summary Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    .circle {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: auto;
+      color: white; font-weight: bold;
+    }
+    .green { background-color: #4CAF50; }
+    .red { background-color: #f44336; }
+  </style>
+</head>
+<body>
+  <h1>Lighthouse Summary</h1>
+  <table>
+    <tr>
+      <th>Page</th>
+      <th>Performance</th>
+      <th>Accessibility</th>
+      <th>Best Practices</th>
+    </tr>
+    ${rows}
+  </table>
+</body>
+</html>
+`;
+return html;
+}
+  
