@@ -120,30 +120,37 @@ async function getColor(score, category , threshold) {
   let rows = '';
   // Run Lighthouse on each URL
   for (const data of url_list.urls) {
-    let threshold = data["thresholds"];
-    let url = data["url"];
-    var final_url = base_url + url;
-    await page.goto(final_url, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000
-    });
+      let threshold = data["thresholds"];
+      if (!threshold) {
+        // Default: always green if no threshold provided
+        threshold = {
+          performance: -Infinity,
+          accessibility: -Infinity,
+          "best-practices": -Infinity
+        };
+      }
+      let url = data["url"];
+      var final_url = base_url + url;
+      await page.goto(final_url, {
+        waitUntil: "domcontentloaded",
+        timeout: 60000
+      });
 
-    var page_title = await page.title();
-    console.log(`Running Lighthouse for ${url}`);
-    console.log(`Running Lighthouse for page title ${page_title}`);
-    var result = await runLighthouse(final_url, page_title);
+      var page_title = await page.title();
+      console.log(`Running Lighthouse for ${url}`);
+      console.log(`Running Lighthouse for page title ${page_title}`);
+      var result = await runLighthouse(final_url, page_title);
     
-    rows += `
-    <tr>
-      <td><a href="${result["filepath"]}" target="_blank">${final_url}</a></td>
-      <td><div class="circle ${await getColor(result["categoryScores"],'performance', threshold)}">${result["categoryScores"]["performance"]}</div></td>
-      <td><div class="circle ${await getColor(result["categoryScores"],'accessibility',threshold)}">${result["categoryScores"]["accessibility"]}</div></td>
-      <td><div class="circle ${await getColor(result["categoryScores"],'best-practices',threshold)}">${result["categoryScores"]["best-practices"]}</div></td>
-    </tr>
-  `;
+      rows += `
+      <tr>
+        <td><a href="${result["filepath"]}" target="_blank">${final_url}</a></td>
+        <td><div class="circle ${await getColor(result["categoryScores"],'performance', threshold)}">${result["categoryScores"]["performance"]}</div></td>
+        <td><div class="circle ${await getColor(result["categoryScores"],'accessibility',threshold)}">${result["categoryScores"]["accessibility"]}</div></td>
+        <td><div class="circle ${await getColor(result["categoryScores"],'best-practices',threshold)}">${result["categoryScores"]["best-practices"]}</div></td>
+      </tr>
+    `;
 
-
-  }
+    }
 
   // Write performance results to JSON file
   const perfOutputFile = './reports/performance-results.json';
