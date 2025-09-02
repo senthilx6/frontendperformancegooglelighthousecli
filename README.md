@@ -31,20 +31,25 @@ Under config folder create config.json
 ```bash
 
 {
-    "url": "https://dentalhospital9801.myfreshworks.com/",
+    "url": "https://dentalhospital9801.celario.com/",
     "username": "senthilccp9102@gmail.com",
     "password": "testautomation19201202"
     "title": "dentalCRM"   // used to it to pass to Puppeteer to wait for the title to be displayed after login , to ensure the lighthouse is able to take perforamnce of the below urls
 }
 ```
-and url.json 
+and url.json with threshold for each URL
 ```bash
 {
-    "urls" : [
-"takeaway/v1/customers",
-"takeaway/v1/settings",
-"takeaway/v1/products",
-]
+    "urls" : [{
+ "url" :"takeaway/v1/customers",
+"thresholds": {"performance":75,"accessibility":85,"best-practices":60}},
+{
+ "url" :"takeaway/v1/settings",
+"thresholds": {"performance":65,"accessibility":70,"best-practices":90}},
+{
+ "url" :"takeaway/v1/products",
+"thresholds": {"performance":55,"accessibility":70,"best-practices":90}}
+    ]
 }
 ```
 
@@ -110,7 +115,7 @@ node run-lighthouse.js
 
 ### 4. Output
 
-the perforamnce output will be generated as json file collated having all the urls info and inidivual html files inside reports directory , which we can expose it in jenkins using archiveartifacts / publishhtml
+the perforamnce output will be generated as json file , and collated custom index.html which would have the performance percentage metrics for all the urls with hyperlink to individual reports
 
 ```bash
 {
@@ -133,7 +138,13 @@ the perforamnce output will be generated as json file collated having all the ur
     "seo": 75
   }
 }
+
+
 ```
+<img width="1778" height="430" alt="Screenshot 2025-08-22 at 5 13 12 PM" src="https://github.com/user-attachments/assets/49079801-2242-4fea-ba3d-7893f712babd" />
+<img width="1270" height="837" alt="Screenshot 2025-08-22 at 5 18 48 PM" src="https://github.com/user-attachments/assets/70563129-a441-4671-b3d3-0d71a1583893" />
+
+then we can expose the index.html and inidivual htmls to jenkins via archiveArtifacts and publishHtml , we can even make a custom logic inside the run-lighthouse.js validating if the percentage exceeds the user threshold , then at end of the job we can raise an custom expection and mark the build as failed , bu this we can block the dev PR from mergeing if the above is implemented as git checks
 
 ### 4. Assertion
-[In progress] you can define the url wise baseline SLA metrics for performance and accessibility and best-practices and compare it with the output json , if any of the page metrics cross the thresold , we can throw an custom expection and make the jenkins job as failed
+[In progress] Support passing url.json as arugements
