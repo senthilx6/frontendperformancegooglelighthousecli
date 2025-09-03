@@ -27,7 +27,7 @@ async function runLighthouse(url, title) {
   const options = {
     logLevel: 'info',
     output: 'html',
-    port: 9223,
+    port: 9221,
     formFactor: "desktop",
     screenEmulation: DESKTOP_EMULATION_METRICS
   };
@@ -91,7 +91,7 @@ async function getColor(score, category , threshold) {
 
   const browser = await puppeteer.launch({  
     headless: true,                          
-    args: ["--remote-debugging-port=9223"],  
+    args: ["--remote-debugging-port=9221"],  
   });
 
   const page = await browser.newPage();
@@ -120,16 +120,14 @@ async function getColor(score, category , threshold) {
   let rows = '';
   // Run Lighthouse on each URL
   for (const data of url_list.urls) {
-      let threshold = data["thresholds"];
-      if (!threshold) {
-        // Default: always green if no threshold provided
-        threshold = {
-          performance: -Infinity,
-          accessibility: -Infinity,
-          "best-practices": -Infinity
-        };
-      }
-      let url = data["url"];
+    let threshold = null ,url = null
+    if(typeof data!== 'object') {
+      url = data
+      threshold = await getThreshold(null);
+    } else {
+      threshold = await getThreshold(data);
+      url = data["url"];
+    }
       var final_url = base_url + url;
       await page.goto(final_url, {
         waitUntil: "domcontentloaded",
@@ -201,5 +199,26 @@ const html = `
 </html>
 `;
 return html;
+}
+
+// Extract thresholds or set defaults
+async function getThreshold(data) {
+  if (!data) {
+    return {
+      performance: -Infinity,
+      accessibility: -Infinity,
+      'best-practices': -Infinity
+    };
+  }
+  let threshold = data["thresholds"];
+      if (!threshold) {
+        threshold = {}
+      }
+      ["performance", "accessibility", "best-practices"].forEach(key => {
+        if (typeof threshold[key] !== 'number') {
+          threshold[key] = -Infinity;
+        }
+      });
+      return threshold;
 }
   
