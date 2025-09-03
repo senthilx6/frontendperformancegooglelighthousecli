@@ -37,7 +37,7 @@ Under config folder create config.json
     "title": "dentalCRM"   // used to it to pass to Puppeteer to wait for the title to be displayed after login , to ensure the lighthouse is able to take perforamnce of the below urls
 }
 ```
-and url.json with threshold for each URL
+and urls.json with threshold for each URL
 ```bash
 {
     "urls" : [{
@@ -50,6 +50,13 @@ and url.json with threshold for each URL
  "url" :"takeaway/v1/products",
 "thresholds": {"performance":55,"accessibility":70,"best-practices":90}}
     ]
+}
+```
+
+OR if you dont know the threshold , just want to mesaure the metrics then urls.json can have 
+``` bash
+{
+    "urls" : ["takeaway/v1/customers","takeaway/v1/settings"]
 }
 ```
 
